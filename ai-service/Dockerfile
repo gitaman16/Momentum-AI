@@ -8,6 +8,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 
 ENV PORT=8000
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Cloud Run sets $PORT; uvicorn binds to it.

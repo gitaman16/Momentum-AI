@@ -3,7 +3,7 @@ import axios from "axios";
 // Thin client around the FastAPI ai-service. Keeps the AI base URL and timeout
 // in one place so controllers stay clean.
 const client = axios.create({
-  baseURL: process.env.AI_SERVICE_URL || "http://localhost:8000",
+  baseURL: process.env.AI_SERVICE_URL || "http://ai-service:8000",
   timeout: 60000
 });
 

@@ -13,9 +13,11 @@ import { errorHandler, notFound } from "./middleware/errorHandler.js";
 export function createApp() {
   const app = express();
 
-  const clientOrigins = process.env.CLIENT_ORIGIN
-    ? process.env.CLIENT_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean)
-    : [];
+  const configuredOrigins = [process.env.CLIENT_ORIGIN, process.env.CORS_ALLOWED_ORIGINS]
+    .flatMap((value) => (value ? value.split(",") : []))
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const localOrigins = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"];
   const githubCodespacesOrigin = /^https?:\/\/[^\s/]+\.app\.github\.dev$/i;
   const githubPreviewOrigin = /^https?:\/\/[^\s/]+\.githubpreview\.dev$/i;
 
@@ -24,10 +26,11 @@ export function createApp() {
       if (!origin) {
         return callback(null, true);
       }
+      const normalizedOrigin = origin.replace(/\/$/, "");
       if (process.env.NODE_ENV !== "production") {
         return callback(null, true);
       }
-      if (clientOrigins.includes(origin)) {
+      if (configuredOrigins.includes(normalizedOrigin) || localOrigins.includes(normalizedOrigin)) {
         return callback(null, true);
       }
       if (githubCodespacesOrigin.test(origin) || githubPreviewOrigin.test(origin)) {
@@ -43,6 +46,7 @@ export function createApp() {
   app.use(morgan("dev"));
 
   app.get("/health", (req, res) => res.json({ status: "ok" }));
+  app.get("/readyz", (req, res) => res.json({ status: "ok" }));
 
   app.use("/api/auth", authRoutes);
   app.use("/api/goals", goalRoutes);

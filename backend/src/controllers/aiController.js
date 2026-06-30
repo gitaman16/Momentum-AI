@@ -5,12 +5,27 @@ import { AutopilotState } from "../models/AutopilotState.js";
 import { callAgent } from "../services/aiClient.js";
 import { buildContext, runAutopilot } from "../services/autopilotService.js";
 
+function aiServiceError(message) {
+  const error = new Error(message);
+  error.status = 502;
+  return error;
+}
+
+async function callAgentSafe(endpoint, payload) {
+  try {
+    return await callAgent(endpoint, payload);
+  } catch (error) {
+    const detail = error?.response?.data?.detail || error.message || "AI service unavailable";
+    throw aiServiceError(`AI service unavailable: ${detail}`);
+  }
+}
+
 // Planning Agent: decompose a goal into estimated subtasks and persist them.
 export async function planGoal(req, res) {
   const goal = await Goal.findOne({ _id: req.params.goalId, user: req.user.id });
   if (!goal) return res.status(404).json({ error: "Goal not found" });
 
-  const result = await callAgent("/agents/plan", {
+  const result = await callAgentSafe("/agents/plan", {
     goal: { title: goal.title, description: goal.description, deadline: goal.deadline }
   });
 
@@ -32,7 +47,7 @@ export async function planGoal(req, res) {
 // Scheduling Agent: assign time blocks to open tasks and persist the schedule.
 export async function scheduleTasks(req, res) {
   const context = await buildContext(req.user.id);
-  const result = await callAgent("/agents/schedule", context);
+  const result = await callAgentSafe("/agents/schedule", context);
 
   await Promise.all(
     (result.schedule || []).map((block) =>
@@ -49,7 +64,7 @@ export async function scheduleTasks(req, res) {
 // Risk Analysis Agent: score tasks for missed-deadline risk and procrastination.
 export async function analyzeRisk(req, res) {
   const context = await buildContext(req.user.id);
-  const result = await callAgent("/agents/risk", context);
+  const result = await callAgentSafe("/agents/risk", context);
 
   await Promise.all(
     (result.risks || []).map((r) =>
@@ -70,7 +85,7 @@ export async function analyzeRisk(req, res) {
 // Productivity Coach: daily plan.
 export async function dailyPlan(req, res) {
   const context = await buildContext(req.user.id);
-  const result = await callAgent("/agents/daily-plan", context);
+  const result = await callAgentSafe("/agents/daily-plan", context);
 
   const insight = await AiInsight.create({
     user: req.user.id,
@@ -90,7 +105,7 @@ export async function weeklyReview(req, res) {
     Task.find({ user: req.user.id, status: "done", completedAt: { $gte: weekAgo } })
   ]);
 
-  const result = await callAgent("/agents/weekly-review", {
+  const result = await callAgentSafe("/agents/weekly-review", {
     ...context,
     completed: completed.map((t) => ({
       title: t.title,
@@ -136,7 +151,7 @@ export async function intakeGoal(req, res) {
     return res.status(400).json({ error: "text is required" });
   }
 
-  const parsed = await callAgent("/agents/intake", {
+  const parsed = await callAgentSafe("/agents/intake", {
     text,
     now: new Date().toISOString()
   });
@@ -149,7 +164,7 @@ export async function intakeGoal(req, res) {
   });
 
   // Immediately decompose the new goal into subtasks.
-  const plan = await callAgent("/agents/plan", {
+  const plan = await callAgentSafe("/agents/plan", {
     goal: { title: goal.title, description: goal.description, deadline: goal.deadline }
   });
   const subtasks = await Task.insertMany(
