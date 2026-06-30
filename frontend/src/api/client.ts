@@ -3,7 +3,7 @@ import axios from "axios";
 // Single axios instance. The auth token is injected from localStorage on every
 // request so we never have to thread it through component props.
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000/api"
+  baseURL: import.meta.env.VITE_API_URL || "/api"
 });
 
 api.interceptors.request.use((config) => {

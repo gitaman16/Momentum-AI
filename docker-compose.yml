@@ -22,13 +22,18 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=7d
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - AI_SERVICE_URL=http://ai-service:8000
-      - CLIENT_ORIGIN=http://localhost:5173
+      - CLIENT_ORIGIN=${CLIENT_ORIGIN}
     depends_on:
       - ai-service
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     ports:
       - "5173:80"
     depends_on:

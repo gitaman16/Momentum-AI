@@ -13,7 +13,32 @@ import { errorHandler, notFound } from "./middleware/errorHandler.js";
 export function createApp() {
   const app = express();
 
-  app.use(cors({ origin: process.env.CLIENT_ORIGIN || "*" }));
+  const clientOrigins = process.env.CLIENT_ORIGIN
+    ? process.env.CLIENT_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean)
+    : [];
+  const githubCodespacesOrigin = /^https?:\/\/[^\s/]+\.app\.github\.dev$/i;
+  const githubPreviewOrigin = /^https?:\/\/[^\s/]+\.githubpreview\.dev$/i;
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      if (clientOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      if (githubCodespacesOrigin.test(origin) || githubPreviewOrigin.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  }));
   app.use(express.json());
   app.use(morgan("dev"));
 
