@@ -85,12 +85,36 @@ class RiskItem(BaseModel):
     taskId: str
     score: float
     reason: str
+    successProbability: int = 50
+    confidence: int = 70
+    riskLevel: str = "medium"
+
+
+class Recommendation(BaseModel):
+    title: str
+    confidence: int = 80
+    reasons: List[str] = []
 
 
 class RiskResponse(BaseModel):
     risks: List[RiskItem]
     procrastinationSignals: List[str] = []
+    recommendations: List[Recommendation] = []
     summary: str
+
+
+class IntakeRequest(BaseModel):
+    text: str
+    now: str
+
+
+class AutopilotResponse(BaseModel):
+    timeline: List[dict] = []
+    schedule: List[dict] = []
+    risks: List[dict] = []
+    todaysFocus: List[dict] = []
+    recommendations: List[dict] = []
+    summary: str = ""
 
 
 class PlanItem(BaseModel):
