@@ -1,4 +1,10 @@
 import { Task } from "../models/Task.js";
+import { runAutopilot } from "../services/autopilotService.js";
+
+// Fire-and-forget: re-run the AI after a change without blocking the response.
+function triggerAutopilot(userId) {
+  runAutopilot(userId).catch(() => {});
+}
 
 export async function listTasks(req, res) {
   const { status, goal } = req.query;
@@ -24,6 +30,7 @@ export async function createTask(req, res) {
     estimatedMinutes,
     deadline: deadline || null
   });
+  triggerAutopilot(req.user.id);
   res.status(201).json({ task });
 }
 
@@ -39,11 +46,13 @@ export async function updateTask(req, res) {
     { new: true }
   );
   if (!task) return res.status(404).json({ error: "Task not found" });
+  triggerAutopilot(req.user.id);
   res.json({ task });
 }
 
 export async function deleteTask(req, res) {
   const task = await Task.findOneAndDelete({ _id: req.params.id, user: req.user.id });
   if (!task) return res.status(404).json({ error: "Task not found" });
+  triggerAutopilot(req.user.id);
   res.json({ ok: true });
 }

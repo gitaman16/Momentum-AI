@@ -1,5 +1,11 @@
 import { Goal } from "../models/Goal.js";
 import { Task } from "../models/Task.js";
+import { runAutopilot } from "../services/autopilotService.js";
+
+// Fire-and-forget: re-run the AI after a change without blocking the response.
+function triggerAutopilot(userId) {
+  runAutopilot(userId).catch(() => {});
+}
 
 export async function listGoals(req, res) {
   const goals = await Goal.find({ user: req.user.id }).sort({ createdAt: -1 });
@@ -17,6 +23,7 @@ export async function createGoal(req, res) {
     description,
     deadline: deadline || null
   });
+  triggerAutopilot(req.user.id);
   res.status(201).json({ goal });
 }
 
@@ -27,6 +34,7 @@ export async function updateGoal(req, res) {
     { new: true }
   );
   if (!goal) return res.status(404).json({ error: "Goal not found" });
+  triggerAutopilot(req.user.id);
   res.json({ goal });
 }
 
@@ -35,5 +43,6 @@ export async function deleteGoal(req, res) {
   if (!goal) return res.status(404).json({ error: "Goal not found" });
   // Detach tasks from the deleted goal rather than removing user work.
   await Task.updateMany({ goal: goal._id }, { goal: null });
+  triggerAutopilot(req.user.id);
   res.json({ ok: true });
 }
