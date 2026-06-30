@@ -12,7 +12,9 @@ function publicUser(user) {
     name: user.name,
     email: user.email,
     avatarUrl: user.avatarUrl,
-    preferences: user.preferences
+    preferences: user.preferences,
+    onboarded: user.onboarded,
+    calendarConnected: !!user.google?.calendarConnected
   };
 }
 
