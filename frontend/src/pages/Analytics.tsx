@@ -1,90 +1,77 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from "recharts";
 import { Card } from "../components/ui/Card";
-import { getTasks } from "../api/tasks";
-import type { Task } from "../types";
+import { getAnalytics } from "../api/analytics";
+import type { Analytics as AnalyticsData } from "../types";
 
-const PIE_COLORS = ["#94a3b8", "#3b82f6", "#f59e0b", "#ef4444"];
+function Metric({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <Card>
+      <p className="text-sm text-slate-500">{label}</p>
+      <p className={`mt-1 text-3xl font-bold ${accent || ""}`}>{value}</p>
+    </Card>
+  );
+}
 
 export default function Analytics() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [data, setData] = useState<AnalyticsData | null>(null);
 
   useEffect(() => {
-    getTasks().then(setTasks).catch(() => {});
+    getAnalytics().then(setData).catch(() => {});
   }, []);
 
-  const stats = useMemo(() => {
-    const total = tasks.length;
-    const done = tasks.filter((t) => t.status === "done").length;
-    const completion = total ? Math.round((done / total) * 100) : 0;
+  if (!data) {
+    return <p className="text-sm text-slate-500">Loading analytics...</p>;
+  }
 
-    const byPriority = ["low", "medium", "high", "urgent"].map((p) => ({
-      name: p,
-      value: tasks.filter((t) => t.priority === p).length
-    }));
-
-    const byStatus = [
-      { name: "To do", count: tasks.filter((t) => t.status === "todo").length },
-      { name: "In progress", count: tasks.filter((t) => t.status === "in_progress").length },
-      { name: "Done", count: done }
-    ];
-
-    // Estimation accuracy from completed tasks that logged actual time.
-    const logged = tasks.filter((t) => t.status === "done" && t.actualMinutes > 0);
-    const estTotal = logged.reduce((s, t) => s + t.estimatedMinutes, 0);
-    const actTotal = logged.reduce((s, t) => s + t.actualMinutes, 0);
-    const accuracy = actTotal ? Math.round((estTotal / actTotal) * 100) : null;
-
-    return { completion, byPriority, byStatus, accuracy };
-  }, [tasks]);
+  const hourLabel = `${data.mostProductiveHour}:00`;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Analytics</h2>
+      <h2 className="text-2xl font-bold">Productivity analytics</h2>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric label="Weekly score" value={`${data.weeklyScore}`} accent="text-brand-600" />
+        <Metric label="Completion rate" value={`${data.completionRate}%`} accent="text-emerald-600" />
+        <Metric label="Overdue rate" value={`${data.overdueRate}%`} accent="text-red-600" />
+        <Metric
+          label="Estimation accuracy"
+          value={data.estimationAccuracy === null ? "--" : `${data.estimationAccuracy}%`}
+        />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <p className="text-sm text-slate-500">Completion rate</p>
-          <p className="mt-1 text-3xl font-bold text-emerald-600">{stats.completion}%</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-slate-500">Total tasks</p>
-          <p className="mt-1 text-3xl font-bold">{tasks.length}</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-slate-500">Estimation accuracy</p>
-          <p className="mt-1 text-3xl font-bold text-brand-600">
-            {stats.accuracy === null ? "--" : `${stats.accuracy}%`}
-          </p>
-        </Card>
+        <Metric label="Avg delay (min)" value={`${data.avgDelayMinutes}`} />
+        <Metric label="Busiest weekday" value={data.busiestWeekday} />
+        <Metric label="Most productive hour" value={hourLabel} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <h3 className="mb-4 font-semibold">Tasks by status</h3>
+          <h3 className="mb-4 font-semibold">Productivity trend (7 days)</h3>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={stats.byStatus}>
-              <XAxis dataKey="name" fontSize={12} />
+            <LineChart data={data.trend}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="day" fontSize={12} />
               <YAxis allowDecimals={false} fontSize={12} />
               <Tooltip />
-              <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} />
-            </BarChart>
+              <Line type="monotone" dataKey="completed" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
           </ResponsiveContainer>
         </Card>
 
         <Card>
-          <h3 className="mb-4 font-semibold">Priority distribution</h3>
+          <h3 className="mb-4 font-semibold">Completions by weekday</h3>
           <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie data={stats.byPriority} dataKey="value" nameKey="name" outerRadius={90} label>
-                {stats.byPriority.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                ))}
-              </Pie>
+            <BarChart data={data.weekdayCounts}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="day" fontSize={12} />
+              <YAxis allowDecimals={false} fontSize={12} />
               <Tooltip />
-            </PieChart>
+              <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} />
+            </BarChart>
           </ResponsiveContainer>
         </Card>
       </div>
