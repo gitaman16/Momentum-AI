@@ -9,6 +9,7 @@ interface AuthState {
   register: (name: string, email: string, password: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => void;
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -56,9 +57,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  // Re-fetch the current user (used after onboarding / preference changes).
+  async function refresh() {
+    try {
+      const res = await api.get("/auth/me");
+      setUser(res.data.user);
+    } catch {
+      /* ignore */
+    }
+  }
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, loginWithGoogle, logout }}
+      value={{ user, loading, login, register, loginWithGoogle, logout, refresh }}
     >
       {children}
     </AuthContext.Provider>
