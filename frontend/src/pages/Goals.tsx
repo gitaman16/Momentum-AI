@@ -4,6 +4,7 @@ import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
 import { getGoals, createGoal, deleteGoal } from "../api/goals";
 import { planGoal } from "../api/ai";
+import { NaturalLanguageGoal } from "../components/NaturalLanguageGoal";
 import { formatDate } from "../lib/format";
 import type { Goal } from "../types";
 
@@ -51,6 +52,12 @@ export default function Goals() {
       <h2 className="text-2xl font-bold">Goals</h2>
 
       <Card>
+        <h3 className="mb-2 font-semibold">Describe a goal in plain language</h3>
+        <NaturalLanguageGoal onDone={load} />
+      </Card>
+
+      <Card>
+        <h3 className="mb-2 font-semibold">Or add one manually</h3>
         <form onSubmit={add} className="space-y-3">
           <input className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="Goal title" value={title} onChange={(e) => setTitle(e.target.value)} />
           <textarea className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="What does success look like?" value={description} onChange={(e) => setDescription(e.target.value)} />
