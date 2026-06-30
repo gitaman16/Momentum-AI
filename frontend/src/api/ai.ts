@@ -30,3 +30,20 @@ export async function getInsights() {
   const res = await api.get("/ai/insights");
   return res.data.insights as AiInsight[];
 }
+
+export async function getAutopilotState() {
+  const res = await api.get("/ai/autopilot");
+  return res.data.state as import("../types").AutopilotState | null;
+}
+
+export async function runAutopilot() {
+  const res = await api.post("/ai/autopilot");
+  return res.data.state as import("../types").AutopilotState | null;
+}
+
+// Natural-language goal creation. Returns the created goal, subtasks and a
+// fresh autopilot state in one round-trip.
+export async function intakeGoal(text: string) {
+  const res = await api.post("/ai/intake", { text });
+  return res.data;
+}
