@@ -1,41 +1,9 @@
 import { Task } from "../models/Task.js";
 import { Goal } from "../models/Goal.js";
-import { User } from "../models/User.js";
 import { AiInsight } from "../models/AiInsight.js";
+import { AutopilotState } from "../models/AutopilotState.js";
 import { callAgent } from "../services/aiClient.js";
-
-// Builds the user context every agent needs: profile preferences plus the
-// current open tasks and active goals.
-async function buildContext(userId) {
-  const [user, tasks, goals] = await Promise.all([
-    User.findById(userId),
-    Task.find({ user: userId, status: { $ne: "done" } }).sort({ deadline: 1 }),
-    Goal.find({ user: userId, status: "active" })
-  ]);
-
-  return {
-    user: {
-      name: user.name,
-      preferences: user.preferences,
-      now: new Date().toISOString()
-    },
-    tasks: tasks.map((t) => ({
-      id: t._id.toString(),
-      title: t.title,
-      priority: t.priority,
-      status: t.status,
-      estimatedMinutes: t.estimatedMinutes,
-      deadline: t.deadline,
-      scheduledStart: t.scheduledStart
-    })),
-    goals: goals.map((g) => ({
-      id: g._id.toString(),
-      title: g.title,
-      description: g.description,
-      deadline: g.deadline
-    }))
-  };
-}
+import { buildContext, runAutopilot } from "../services/autopilotService.js";
 
 // Planning Agent: decompose a goal into estimated subtasks and persist them.
 export async function planGoal(req, res) {
@@ -147,4 +115,64 @@ export async function listInsights(req, res) {
     .sort({ createdAt: -1 })
     .limit(50);
   res.json({ insights });
+}
+
+// Force a fresh autopilot run and return the persisted state.
+export async function autopilotNow(req, res) {
+  const state = await runAutopilot(req.user.id);
+  res.json({ state });
+}
+
+// Return the latest stored autopilot state without re-running the AI.
+export async function getAutopilotState(req, res) {
+  const state = await AutopilotState.findOne({ user: req.user.id });
+  res.json({ state });
+}
+
+// Natural-language goal creation: parse text -> goal -> subtasks -> autopilot.
+export async function intakeGoal(req, res) {
+  const { text } = req.body;
+  if (!text || !text.trim()) {
+    return res.status(400).json({ error: "text is required" });
+  }
+
+  const parsed = await callAgent("/agents/intake", {
+    text,
+    now: new Date().toISOString()
+  });
+
+  const goal = await Goal.create({
+    user: req.user.id,
+    title: parsed.title,
+    description: parsed.description || "",
+    deadline: parsed.deadline || null
+  });
+
+  // Immediately decompose the new goal into subtasks.
+  const plan = await callAgent("/agents/plan", {
+    goal: { title: goal.title, description: goal.description, deadline: goal.deadline }
+  });
+  const subtasks = await Task.insertMany(
+    (plan.subtasks || []).map((s) => ({
+      user: req.user.id,
+      goal: goal._id,
+      title: s.title,
+      description: s.description || "",
+      priority: s.priority || "medium",
+      estimatedMinutes: s.estimatedMinutes || 30,
+      aiGenerated: true
+    }))
+  );
+
+  // Run the full workflow so Today's Focus, schedule and risk are ready at once.
+  const state = await runAutopilot(req.user.id);
+
+  res.status(201).json({
+    goal,
+    subtasks,
+    explanation: parsed.explanation || "",
+    confidence: parsed.confidence ?? null,
+    planReasoning: plan.reasoning || "",
+    state
+  });
 }
