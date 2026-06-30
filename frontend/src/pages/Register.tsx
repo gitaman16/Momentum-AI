@@ -18,7 +18,7 @@ export default function Register() {
     setError("");
     try {
       await register(name, email, password);
-      navigate("/");
+      navigate("/onboarding");
     } catch (err: any) {
       setError(err.response?.data?.error || "Registration failed");
     } finally {
