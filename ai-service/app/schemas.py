@@ -21,6 +21,12 @@ class TaskContext(BaseModel):
     scheduledStart: Optional[str] = None
 
 
+class CalendarEvent(BaseModel):
+    title: str = ""
+    start: str
+    end: str
+
+
 class GoalContext(BaseModel):
     id: str
     title: str
@@ -40,6 +46,7 @@ class Context(BaseModel):
     tasks: List[TaskContext] = []
     goals: List[GoalContext] = []
     completed: List[CompletedTask] = []
+    calendar: List[CalendarEvent] = []
 
 
 # ---- Request payloads ----

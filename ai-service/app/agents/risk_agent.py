@@ -14,10 +14,19 @@ class RiskAgent(Agent):
         "priority, and whether they are scheduled), score each task's risk of "
         "missing its deadline from 0.0 (safe) to 1.0 (critical). Consider tight "
         "deadlines, large unscheduled estimates, and high-priority work left in "
-        "todo. Identify concrete procrastination signals across the workload.\n\n"
+        "todo. Identify concrete procrastination signals across the workload.\n"
+        "For each task also estimate a deadline success probability (0-100), a "
+        "confidence score (0-100) in your estimate, and a riskLevel of 'low', "
+        "'medium' or 'high'. The 'reason' must clearly explain WHY the score was "
+        "produced (e.g. remaining effort vs available time). Finally, propose "
+        "concrete recommendations, each with a confidence score and the reasons "
+        "behind it.\n\n"
         "Return ONLY valid JSON with this shape:\n"
-        '{{"risks": [{{"taskId": str, "score": float, "reason": str}}], '
-        '"procrastinationSignals": [str], "summary": str}}'
+        '{{"risks": [{{"taskId": str, "score": float, "reason": str, '
+        '"successProbability": int, "confidence": int, "riskLevel": str}}], '
+        '"procrastinationSignals": [str], '
+        '"recommendations": [{{"title": str, "confidence": int, "reasons": [str]}}], '
+        '"summary": str}}'
     )
 
     def analyze(self, context: dict) -> dict:

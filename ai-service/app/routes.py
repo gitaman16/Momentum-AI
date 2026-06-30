@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.schemas import PlanRequest, Context
+from app.schemas import PlanRequest, Context, IntakeRequest
 from app.agents.supervisor import supervisor
 
 router = APIRouter(prefix="/agents", tags=["agents"])
@@ -44,3 +44,22 @@ def weekly_review(ctx: Context):
         return supervisor.weekly_review(ctx.model_dump())
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Weekly review failed: {e}")
+
+
+@router.post("/intake")
+def intake(req: IntakeRequest):
+    try:
+        return supervisor.intake_goal(req.text, req.now)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Intake failed: {e}")
+
+
+@router.post("/autopilot")
+def autopilot(ctx: Context):
+    """Runs the entire multi-agent workflow in a single pass and returns the
+    timeline plus all results. Called automatically by the backend on key
+    user actions (login, dashboard load, goal/task changes)."""
+    try:
+        return supervisor.autopilot(ctx.model_dump())
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Autopilot failed: {e}")

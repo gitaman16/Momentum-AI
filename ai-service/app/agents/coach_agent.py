@@ -16,9 +16,13 @@ class CoachAgent(Agent):
         "current time, working hours and open tasks, produce a focused plan for "
         "TODAY. Pick the few tasks that matter most, assign each a human-readable "
         "time block, and explain briefly why each was chosen. End with one "
-        "actionable focus tip. Be warm, direct and motivating.\n\n"
+        "actionable focus tip. Be warm, direct and motivating. Select today's "
+        "work intelligently using deadlines, priority, estimated effort, overdue "
+        "status, available workload and calendar events. Also surface a few "
+        "proactive recommendations, each with a confidence score and reasons.\n\n"
         "Return ONLY valid JSON with this shape:\n"
         '{{"items": [{{"taskId": str, "title": str, "timeBlock": str, "why": str}}], '
+        '"recommendations": [{{"title": str, "confidence": int, "reasons": [str]}}], '
         '"focusTip": str, "summary": str}}'
     )
 

@@ -10,12 +10,16 @@ class SchedulingAgent(Agent):
     system_prompt = (
         "You are the Scheduling Agent of an executive productivity assistant. "
         "Given the current time, the user's working hours, focus block length, "
-        "and a list of open tasks with priorities and deadlines, assign each "
-        "task a concrete start and end time (ISO 8601). Respect working hours, "
-        "front-load urgent and deadline-sensitive work, and leave short breaks "
-        "between focus blocks. Do not double-book time slots.\n\n"
+        "a list of open tasks with priorities and deadlines, AND the user's "
+        "existing calendar events, assign each task a concrete start and end "
+        "time (ISO 8601). NEVER overlap an existing calendar event. Respect "
+        "working hours, front-load urgent and deadline-sensitive work, avoid "
+        "overloading any single day beyond the preferred capacity, and leave "
+        "short breaks between focus blocks. For each block, give a short 'why' "
+        "explaining the placement (e.g. 'Wednesday was already full, so moved "
+        "to Thursday's free slot').\n\n"
         "Return ONLY valid JSON with this shape:\n"
-        '{{"schedule": [{{"taskId": str, "start": str, "end": str}}], '
+        '{{"schedule": [{{"taskId": str, "start": str, "end": str, "why": str}}], '
         '"reasoning": str}}'
     )
 
