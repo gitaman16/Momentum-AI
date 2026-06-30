@@ -3,6 +3,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { getTasks, createTask, updateTask, deleteTask } from "../api/tasks";
 import { scheduleTasks } from "../api/ai";
+import { addTaskToCalendar } from "../api/calendar";
 import { formatDate, priorityColor, riskLabel } from "../lib/format";
 import type { Task } from "../types";
 
@@ -53,6 +54,22 @@ export default function Tasks() {
     }
   }
 
+  // Tracks which task is currently being added to the calendar, and which are done.
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [addedIds, setAddedIds] = useState<string[]>([]);
+
+  async function addToCalendar(task: Task) {
+    setAddingId(task._id);
+    try {
+      await addTaskToCalendar(task._id);
+      setAddedIds((prev) => [...prev, task._id]);
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Could not add to calendar");
+    } finally {
+      setAddingId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -99,6 +116,20 @@ export default function Tasks() {
                     {col.key !== "in_progress" && <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => move(t, "in_progress")}>Start</Button>}
                     {col.key !== "done" && <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => move(t, "done")}>Done</Button>}
                   </div>
+                  {t.scheduledStart && t.status !== "done" && (
+                    addedIds.includes(t._id) ? (
+                      <span className="text-xs font-medium text-emerald-600">Added to calendar</span>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        className="px-2 py-1 text-xs"
+                        onClick={() => addToCalendar(t)}
+                        disabled={addingId === t._id}
+                      >
+                        {addingId === t._id ? "Adding..." : "Add to Calendar"}
+                      </Button>
+                    )
+                  )}
                 </Card>
               );
             })}

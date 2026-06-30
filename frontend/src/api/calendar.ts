@@ -14,3 +14,9 @@ export async function completeOnboarding() {
   const res = await api.post("/auth/onboarding/complete");
   return res.data;
 }
+
+// Push a scheduled task's focus block onto the user's Google Calendar.
+export async function addTaskToCalendar(taskId: string) {
+  const res = await api.post(`/calendar/events/task/${taskId}`);
+  return res.data;
+}
