@@ -8,15 +8,16 @@ import {
   weeklyReview,
   listInsights
 } from "../controllers/aiController.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
 router.use(requireAuth);
 
-router.post("/plan/:goalId", planGoal);
-router.post("/schedule", scheduleTasks);
-router.post("/risk", analyzeRisk);
-router.post("/daily-plan", dailyPlan);
-router.post("/weekly-review", weeklyReview);
-router.get("/insights", listInsights);
+router.post("/plan/:goalId", asyncHandler(planGoal));
+router.post("/schedule", asyncHandler(scheduleTasks));
+router.post("/risk", asyncHandler(analyzeRisk));
+router.post("/daily-plan", asyncHandler(dailyPlan));
+router.post("/weekly-review", asyncHandler(weeklyReview));
+router.get("/insights", asyncHandler(listInsights));
 
 export default router;
