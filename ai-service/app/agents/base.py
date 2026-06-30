@@ -36,7 +36,15 @@ class Agent:
             [("system", self.system_prompt), ("human", "{input}")]
         )
 
-    def run(self, user_input: str) -> dict:
-        chain = self.prompt | self.llm
+    def run(self, user_input: str, system_prompt: str | None = None) -> dict:
+        # Allow callers to override the system prompt per-invocation without
+        # mutating shared instance state (important for singleton agents).
+        if system_prompt is None:
+            prompt = self.prompt
+        else:
+            prompt = ChatPromptTemplate.from_messages(
+                [("system", system_prompt), ("human", "{input}")]
+            )
+        chain = prompt | self.llm
         result = chain.invoke({"input": user_input})
         return _extract_json(result.content)

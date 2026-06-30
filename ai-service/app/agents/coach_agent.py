@@ -8,6 +8,8 @@ class CoachAgent(Agent):
 
     name = "coach"
     temperature = 0.4
+    # A neutral default; daily_plan/weekly_review override per call.
+    system_prompt = "You are the Productivity Coach of an executive assistant."
 
     daily_prompt = (
         "You are the Productivity Coach of an executive assistant. Using the "
@@ -33,18 +35,13 @@ class CoachAgent(Agent):
     )
 
     def daily_plan(self, context: dict) -> dict:
-        self.system_prompt = self.daily_prompt
-        self._rebuild_prompt()
-        return self.run("Context:\n" + json.dumps(context, default=str))
+        return self.run(
+            "Context:\n" + json.dumps(context, default=str),
+            system_prompt=self.daily_prompt,
+        )
 
     def weekly_review(self, context: dict) -> dict:
-        self.system_prompt = self.weekly_prompt
-        self._rebuild_prompt()
-        return self.run("Context:\n" + json.dumps(context, default=str))
-
-    def _rebuild_prompt(self):
-        from langchain_core.prompts import ChatPromptTemplate
-
-        self.prompt = ChatPromptTemplate.from_messages(
-            [("system", self.system_prompt), ("human", "{input}")]
+        return self.run(
+            "Context:\n" + json.dumps(context, default=str),
+            system_prompt=self.weekly_prompt,
         )
