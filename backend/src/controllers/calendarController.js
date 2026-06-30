@@ -1,5 +1,6 @@
 import { User } from "../models/User.js";
-import { connectCalendar, getUpcomingEvents } from "../services/calendarService.js";
+import { Task } from "../models/Task.js";
+import { connectCalendar, getUpcomingEvents, createEvent } from "../services/calendarService.js";
 import { runAutopilot } from "../services/autopilotService.js";
 
 // Exchange the auth code from the frontend popup and store calendar tokens,
@@ -21,4 +22,26 @@ export async function events(req, res) {
   const user = await User.findById(req.user.id);
   const items = await getUpcomingEvents(user);
   res.json({ events: items });
+}
+
+// Push a single scheduled task's focus block onto the user's calendar.
+export async function addTask(req, res) {
+  const user = await User.findById(req.user.id);
+  if (!user?.google?.calendarConnected) {
+    return res.status(400).json({ error: "Connect Google Calendar first" });
+  }
+
+  const task = await Task.findOne({ _id: req.params.taskId, user: req.user.id });
+  if (!task) return res.status(404).json({ error: "Task not found" });
+  if (!task.scheduledStart || !task.scheduledEnd) {
+    return res.status(400).json({ error: "Task has no scheduled time. Run autopilot first." });
+  }
+
+  const eventId = await createEvent(user, {
+    title: `Focus: ${task.title}`,
+    start: new Date(task.scheduledStart).toISOString(),
+    end: new Date(task.scheduledEnd).toISOString()
+  });
+
+  res.json({ ok: true, eventId });
 }
