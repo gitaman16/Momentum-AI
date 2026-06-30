@@ -15,7 +15,18 @@ const userSchema = new mongoose.Schema(
         end: { type: String, default: "18:00" }
       },
       timezone: { type: String, default: "UTC" },
-      focusBlockMinutes: { type: Number, default: 50 }
+      focusBlockMinutes: { type: Number, default: 50 },
+      // Max preferred focus minutes per day; used to detect overloaded days.
+      dailyCapacityMinutes: { type: Number, default: 360 }
+    },
+    // Set once the user has completed first-time onboarding.
+    onboarded: { type: Boolean, default: false },
+    // Google Calendar OAuth tokens (only stored if the user connects calendar).
+    google: {
+      accessToken: { type: String, default: null },
+      refreshToken: { type: String, default: null },
+      tokenExpiry: { type: Date, default: null },
+      calendarConnected: { type: Boolean, default: false }
     }
   },
   { timestamps: true }

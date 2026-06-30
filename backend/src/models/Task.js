@@ -26,6 +26,11 @@ const taskSchema = new mongoose.Schema(
     completedAt: { type: Date, default: null },
     // Set by the Risk Analysis Agent on its latest run.
     riskScore: { type: Number, default: 0 },
+    // Explainable AI fields refreshed by autopilot.
+    successProbability: { type: Number, default: null },
+    confidence: { type: Number, default: null },
+    riskLevel: { type: String, enum: ["low", "medium", "high", null], default: null },
+    riskReason: { type: String, default: "" },
     aiGenerated: { type: Boolean, default: false }
   },
   { timestamps: true }
