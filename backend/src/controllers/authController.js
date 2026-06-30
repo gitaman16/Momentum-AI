@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { OAuth2Client } from "google-auth-library";
 import { User } from "../models/User.js";
 import { signToken } from "../utils/jwt.js";
+import { runAutopilot } from "../services/autopilotService.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -51,6 +52,8 @@ export async function login(req, res) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
+  // Autopilot refreshes guidance on login so the dashboard is ready.
+  runAutopilot(user._id).catch(() => {});
   const token = signToken({ id: user._id, email: user.email });
   res.json({ token, user: publicUser(user) });
 }
@@ -82,6 +85,8 @@ export async function googleLogin(req, res) {
     await user.save();
   }
 
+  // Autopilot refreshes guidance on Google login too.
+  runAutopilot(user._id).catch(() => {});
   const token = signToken({ id: user._id, email: user.email });
   res.json({ token, user: publicUser(user) });
 }
@@ -91,5 +96,15 @@ export async function me(req, res) {
   if (!user) {
     return res.status(404).json({ error: "User not found" });
   }
+  res.json({ user: publicUser(user) });
+}
+
+// Marks onboarding complete once the user creates their first goal/tasks.
+export async function completeOnboarding(req, res) {
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { onboarded: true },
+    { new: true }
+  );
   res.json({ user: publicUser(user) });
 }

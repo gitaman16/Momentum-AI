@@ -5,6 +5,8 @@ import authRoutes from "./routes/authRoutes.js";
 import goalRoutes from "./routes/goalRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
+import calendarRoutes from "./routes/calendarRoutes.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 
 // Builds the Express app. Route modules are mounted here; server.js starts it.
@@ -21,6 +23,8 @@ export function createApp() {
   app.use("/api/goals", goalRoutes);
   app.use("/api/tasks", taskRoutes);
   app.use("/api/ai", aiRoutes);
+  app.use("/api/analytics", analyticsRoutes);
+  app.use("/api/calendar", calendarRoutes);
 
   app.use(notFound);
   app.use(errorHandler);
